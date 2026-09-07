@@ -5,8 +5,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.text.WordUtils;
 
 public class IngestionServiceApp {
 
@@ -33,7 +35,7 @@ public class IngestionServiceApp {
 
                 if (data.length > 0) {
                     for (int i = 0; i < data.length; i++) {
-                        data[i] = data[i].trim().toLowerCase();
+                        data[i] = WordUtils.capitalizeFully(data[i].trim());
                     }
                     try {
                         beds = Integer.parseInt(data[3]);
@@ -43,7 +45,7 @@ public class IngestionServiceApp {
                             beds = null;
                         }
                     } catch (NumberFormatException e) {
-                        notes = "beds_available was non-numeric ('" + data[3] + "') - flagged for follow up";
+                        notes = "beds_available was non-numeric ('" + data[3].toLowerCase() + "') - flagged for follow up";
                     }
                     jsonObject.put("ward_id", data[0]);
                     jsonObject.put("wing", data[1]);
