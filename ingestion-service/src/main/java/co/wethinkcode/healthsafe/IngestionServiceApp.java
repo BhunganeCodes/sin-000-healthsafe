@@ -5,6 +5,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class IngestionServiceApp {
 
@@ -21,7 +23,8 @@ public class IngestionServiceApp {
         String csvSplitBy = ",";
 
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
-            HashMap<String, String> map = new HashMap<>();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode jsonObject = mapper.createObjectNode();
 
             while ((line = br.readLine()) != null) {
                 String[] data = line.trim().split(csvSplitBy);
@@ -30,16 +33,19 @@ public class IngestionServiceApp {
                     for (int i = 0; i < data.length; i++) {
                         data[i] = data[i].trim().toLowerCase();
                     }
-                    System.out.println("Ward ID: " + data[0]);
-                    System.out.println("Wing: " + data[1]);
-                    System.out.println("Department: " + data[2]);
-                    map.put("ward_id", data[0]);
-                    map.put("wing", data[1]);
-                    map.put("department", data[2]);
-                    map.put("beds_available", data[3]);
+                    //System.out.println("Ward ID: " + data[0]);
+                    //System.out.println("Wing: " + data[1]);
+                    //System.out.println("Department: " + data[2]);
+                    jsonObject.put("ward_id", data[0]);
+                    jsonObject.put("wing", data[1]);
+                    jsonObject.put("department", data[2]);
+                    jsonObject.put("beds_available", data[3]);
                     // System.out.println("Beds Available: " + data[3]);
+                    String jsonString = mapper.writeValueAsString(jsonObject);
+                    System.out.println(jsonString);
                 }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
