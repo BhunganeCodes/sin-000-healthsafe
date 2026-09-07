@@ -26,10 +26,12 @@ public class IngestionServiceApp {
 
                 if (data.length > 0) {
                     for (int i = 0; i < data.length; i++) {
-                        data[i] = data[i].trim();
+                        data[i] = data[i].trim().toUpperCase();
                     }
-                    System.out.println(data[0]);
-                    System.out.println(data[1]);
+                    System.out.println("Ward ID: " + data[0]);
+                    System.out.println("Wing: " + data[1]);
+                    System.out.println("Department: " +data[2]);
+                    System.out.println("Beds Available: " + data[3]);
                 }
             }
         } catch (IOException e) {
