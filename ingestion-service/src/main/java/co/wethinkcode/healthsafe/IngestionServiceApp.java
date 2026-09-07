@@ -22,7 +22,7 @@ public class IngestionServiceApp {
         // TODO: read and clean src/main/resources/wards-outdated.csv (wards, wings, specialist departments data —
         // trim whitespace, fix casing, normalize dates/booleans) and expose the
         // cleaned records here for the other services to consume.
-        String csvFile = "src/main/resources/wards-outdated.csv";
+        String csvFile = "ingestion-service/src/main/resources/wards-outdated.csv";
         String line = "";
         String csvSplitBy = ",";
 
