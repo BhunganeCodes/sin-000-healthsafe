@@ -13,8 +13,10 @@ import org.apache.commons.text.WordUtils;
 public class IngestionServiceApp {
 
     public static void main(String[] args) {
+        ArrayList<String> results = new ArrayList<>();
         Javalin app = Javalin.create(config -> {
             config.routes.get("/health", ctx -> ctx.result("OK"));
+            config.routes.get("/records", ctx -> ctx.json(results));
         }).start(7030);
 
         // TODO: read and clean src/main/resources/wards-outdated.csv (wards, wings, specialist departments data —
@@ -27,7 +29,7 @@ public class IngestionServiceApp {
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode jsonObject = mapper.createObjectNode();
-            ArrayList<String> results = new ArrayList<>();
+
 
             while ((line = br.readLine()) != null) {
                 String[] data = line.trim().split(csvSplitBy);
