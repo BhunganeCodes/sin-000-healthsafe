@@ -13,9 +13,9 @@ import org.apache.commons.text.WordUtils;
 public class IngestionServiceApp {
 
     public static void main(String[] args) {
-        Javalin app = Javalin.create().start(7030);
-
-        app.get("/health", ctx -> ctx.result("OK"));
+        Javalin app = Javalin.create(config -> {
+            config.routes.get("/health", ctx -> ctx.result("OK"));
+        }).start(7030);
 
         // TODO: read and clean src/main/resources/wards-outdated.csv (wards, wings, specialist departments data —
         // trim whitespace, fix casing, normalize dates/booleans) and expose the
