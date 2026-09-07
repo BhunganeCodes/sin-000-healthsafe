@@ -15,19 +15,25 @@ public class IngestionServiceApp {
         // TODO: read and clean src/main/resources/wards-outdated.csv (wards, wings, specialist departments data —
         // trim whitespace, fix casing, normalize dates/booleans) and expose the
         // cleaned records here for the other services to consume.
-        String csvFile = "resources/wards-outdated.csv";
+        String csvFile = "src/main/resources/wards-outdated.csv";
         String line = "";
         String csvSplitBy = ",";
 
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
 
-            while ((line = br.readLine() != null))
+            while ((line = br.readLine()) != null) {
                 String[] data = line.trim().split(csvSplitBy);
 
-            if (data.length > 0) {
-                System.out.println(data[0]);
-                System.out.println(data[1]);
+                if (data.length > 0) {
+                    for (int i = 0; i < data.length; i++) {
+                        data[i] = data[i].trim();
+                    }
+                    System.out.println(data[0]);
+                    System.out.println(data[1]);
+                }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
     }
