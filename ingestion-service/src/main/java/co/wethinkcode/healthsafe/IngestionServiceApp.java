@@ -1,6 +1,9 @@
 package co.wethinkcode.healthsafe;
 
 import io.javalin.Javalin;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class IngestionServiceApp {
 
@@ -12,5 +15,20 @@ public class IngestionServiceApp {
         // TODO: read and clean src/main/resources/wards-outdated.csv (wards, wings, specialist departments data —
         // trim whitespace, fix casing, normalize dates/booleans) and expose the
         // cleaned records here for the other services to consume.
+        String csvFile = "resources/wards-outdated.csv";
+        String line = "";
+        String csvSplitBy = ",";
+
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+
+            while ((line = br.readLine() != null))
+                String[] data = line.trim().split(csvSplitBy);
+
+            if (data.length > 0) {
+                System.out.println(data[0]);
+                System.out.println(data[1]);
+            }
+        }
+
     }
 }
