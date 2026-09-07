@@ -4,7 +4,7 @@ import io.javalin.Javalin;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,6 +27,7 @@ public class IngestionServiceApp {
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode jsonObject = mapper.createObjectNode();
+            ArrayList<String> results = new ArrayList<>();
 
             while ((line = br.readLine()) != null) {
                 String[] data = line.trim().split(csvSplitBy);
@@ -54,8 +55,13 @@ public class IngestionServiceApp {
                     jsonObject.put("notes", notes);
 
                     String jsonString = mapper.writeValueAsString(jsonObject);
-                    System.out.println(jsonString);
+                    results.add(jsonString);
+                    //System.out.println(jsonString);
                 }
+            }
+
+            for (int i=1; i < results.toArray().length; i++) {
+                System.out.println(results.toArray()[i]);
             }
 
         } catch (IOException e) {
