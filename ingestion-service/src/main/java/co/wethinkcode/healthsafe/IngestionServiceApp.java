@@ -28,19 +28,29 @@ public class IngestionServiceApp {
 
             while ((line = br.readLine()) != null) {
                 String[] data = line.trim().split(csvSplitBy);
+                String notes;
+                Integer beds = null;
 
                 if (data.length > 0) {
                     for (int i = 0; i < data.length; i++) {
                         data[i] = data[i].trim().toLowerCase();
                     }
-                    //System.out.println("Ward ID: " + data[0]);
-                    //System.out.println("Wing: " + data[1]);
-                    //System.out.println("Department: " + data[2]);
+                    try {
+                        beds = Integer.parseInt(data[3]);
+                        notes = "N/A";
+                        if (beds < 0) {
+                            notes = "beds_available was negative ('" + beds + "') - flagged for follow up";
+                            beds = null;
+                        }
+                    } catch (NumberFormatException e) {
+                        notes = "beds_available was non-numeric ('" + data[3] + "') - flagged for follow up";
+                    }
                     jsonObject.put("ward_id", data[0]);
                     jsonObject.put("wing", data[1]);
                     jsonObject.put("department", data[2]);
-                    jsonObject.put("beds_available", data[3]);
-                    // System.out.println("Beds Available: " + data[3]);
+                    jsonObject.put("beds_available", beds);
+                    jsonObject.put("notes", notes);
+
                     String jsonString = mapper.writeValueAsString(jsonObject);
                     System.out.println(jsonString);
                 }
