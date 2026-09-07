@@ -5,6 +5,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.javalin.Javalin;
 
@@ -31,7 +37,13 @@ public class WardServiceApp {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         System.out.println(response.toString());
         if (response.statusCode() != 200) {
-            //
+            throw new RuntimeException("Ingestion returned: " + response.statusCode());
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String[] respArray = response.body().split(",");
+
+        for (String res : respArray) {
+            System.out.println(res.toString());
         }
     }
 }
