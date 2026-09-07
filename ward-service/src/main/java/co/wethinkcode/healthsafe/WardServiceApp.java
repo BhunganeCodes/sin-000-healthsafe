@@ -1,16 +1,38 @@
 package co.wethinkcode.healthsafe;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
 import io.javalin.Javalin;
 
 public class WardServiceApp {
 
-    public static void main(String[] args) {
-        Javalin app = Javalin.create().start(7031);
+    public static void main(String[] args) throws IOException, InterruptedException{
+        Javalin app = Javalin.create(config -> {
+            config.routes.get("/health", ctx -> ctx.result("OK"));
+        //wards and departments lists
 
-        app.get("/health", ctx -> ctx.result("OK"));
+        }).start(7031);
 
         // TODO (Provides lists of wards and departments.)
         // Add domain endpoints for ward-service here.
+        String INGESTION_URL = "http://localhost:7030/records";
+
+        HttpClient client = HttpClient.newHttpClient();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(INGESTION_URL))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.toString());
+        if (response.statusCode() != 200) {
+            //
+        }
     }
 }
 
