@@ -1,5 +1,16 @@
 package co.wethinkcode.healthsafe;
 
+import io.javalin.Javalin;
+import jakarta.jms.Connection;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Session;
+import jakarta.jms.TextMessage;
+import jakarta.jms.Topic;
+import jakarta.jms.Queue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,13 +23,19 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.activemq.ActiveMQConnectionFactory;
+
+import co.wethinkcode.healthsafe.mq.MqConfig;
 
 import io.javalin.Javalin;
 
 public class WardServiceApp {
 
     private static final String INGESTION_URL = "http://localhost:7030/records";
+
+    private static Connection mqConnection;
+    private static Session mqSession;
+    private static MessageProducer mqProducer;
 
     public static void main(String[] args) throws IOException, InterruptedException{
         Javalin app = Javalin.create(config -> {
