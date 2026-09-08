@@ -1,15 +1,7 @@
 package co.wethinkcode.healthsafe;
 
 import io.javalin.Javalin;
-import jakarta.jms.Connection;
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.MessageConsumer;
-import jakarta.jms.MessageProducer;
-import jakarta.jms.Session;
-import jakarta.jms.TextMessage;
-import jakarta.jms.Topic;
-import jakarta.jms.Queue;
+import jakarta.jms.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -19,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -28,10 +21,12 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import co.wethinkcode.healthsafe.mq.MqConfig;
 
 import io.javalin.Javalin;
+import org.apache.activemq.Message;
 
 public class WardServiceApp {
 
     private static final String INGESTION_URL = "http://localhost:7030/records";
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private static Connection mqConnection;
     private static Session mqSession;
@@ -64,7 +59,6 @@ public class WardServiceApp {
 
     private static List<Map<String, Object>> fetchIngestionRecords() throws Exception {
         HttpClient client = HttpClient.newHttpClient();
-        ObjectMapper mapper = new ObjectMapper();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(INGESTION_URL))
@@ -84,6 +78,47 @@ public class WardServiceApp {
         Map<String, Object> ward = new HashMap<>();
         ward.put("department", record.get("department"));
         return ward;
+    }
+
+    private static void setupMessageQueue() throws JMSException {
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(MqConfig.BROKER_URL);
+        mqConnection = factory.createConnection();
+        mqConnection.start();
+        mqSession = mqConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        Topic topic = mqSession.createTopic(MqConfig.TOPIC);
+        MessageConsumer consumer = mqSession.createConsumer(topic);
+        consumer.setMessageListener(WardServiceApp::onStaffingEventMessage);
+
+        Queue queue = (Queue) mqSession.createQueue(MqConfig.QUEUE);
+        mqProducer = mqSession.createProducer((Destination) queue);
+    }
+
+
+    private static void onStaffingEventMessage(jakarta.jms.Message message) {
+        try {
+            if (message instanceof TextMessage textMessage) {
+                String body = textMessage.getText();
+                System.out.println("Received staffing update: " + body);
+            }
+
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void publishEquipmentFailure(String wardId, String description) {
+        try {
+            String payload = mapper.writeValueAsString(Map.of(
+                    "ward_id", wardId,
+                    "description", description,
+                    "timestamp", System.currentTimeMillis()
+            ));
+            TextMessage message = mqSession.createTextMessage(payload);
+            mqProducer.send(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
 
