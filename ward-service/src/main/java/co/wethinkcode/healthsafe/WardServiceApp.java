@@ -5,8 +5,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,18 +18,36 @@ import io.javalin.Javalin;
 
 public class WardServiceApp {
 
+    private static final String INGESTION_URL = "http://localhost:7030/records";
+
     public static void main(String[] args) throws IOException, InterruptedException{
         Javalin app = Javalin.create(config -> {
             config.routes.get("/health", ctx -> ctx.result("OK"));
-        //wards and departments lists
+            config.routes.get("/wards", ctx -> {
+                try {
+                    List<Map<String, Object>> allRecords = fetchIngestionRecords();
+
+                    List<Map<String, Object>> wardsOnly = allRecords.stream()
+                            .map(WardServiceApp::toWardView)
+                            .collect(Collectors.toList());
+
+                    ctx.json(wardsOnly);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    //ctx.status(502).json(Map.of("error", "Could not reach ingestion service"));
+                }
+            });
 
         }).start(7031);
 
         // TODO (Provides lists of wards and departments.)
         // Add domain endpoints for ward-service here.
-        String INGESTION_URL = "http://localhost:7030/records";
 
+    }
+
+    private static List<Map<String, Object>> fetchIngestionRecords() throws Exception {
         HttpClient client = HttpClient.newHttpClient();
+        ObjectMapper mapper = new ObjectMapper();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(INGESTION_URL))
@@ -35,16 +55,21 @@ public class WardServiceApp {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println(response.toString());
+
         if (response.statusCode() != 200) {
             throw new RuntimeException("Ingestion returned: " + response.statusCode());
         }
-        ObjectMapper mapper = new ObjectMapper();
-        String[] respArray = response.body().split(",");
 
-        for (String res : respArray) {
-            System.out.println(res.toString());
-        }
+        return mapper.readValue(response.body(), new TypeReference<List<Map<String, Object>>>() {});
+    }
+
+    private static Map<String, Object> toWardView(Map<String, Object> record) {
+        Map<String, Object> ward = new HashMap<>();
+        ward.put("ward_id", record.get("ward_id"));
+        ward.put("wing", record.get("wing"));
+        ward.put("beds_available", record.get("beds_available"));
+        ward.put("notes", record.get("notes"));
+        return ward;
     }
 }
 
