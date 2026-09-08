@@ -65,10 +65,7 @@ public class WardServiceApp {
 
     private static Map<String, Object> toWardView(Map<String, Object> record) {
         Map<String, Object> ward = new HashMap<>();
-        ward.put("ward_id", record.get("ward_id"));
-        ward.put("wing", record.get("wing"));
-        ward.put("beds_available", record.get("beds_available"));
-        ward.put("notes", record.get("notes"));
+        ward.put("department", record.get("department"));
         return ward;
     }
 }
