@@ -32,7 +32,7 @@ public class WardServiceApp {
     private static Session mqSession;
     private static MessageProducer mqProducer;
 
-    public static void main(String[] args) throws IOException, InterruptedException{
+    public static void main(String[] args) throws Exception {
         Javalin app = Javalin.create(config -> {
             config.routes.get("/health", ctx -> ctx.result("OK"));
             config.routes.get("/wards", ctx -> {
@@ -54,7 +54,7 @@ public class WardServiceApp {
 
         // TODO (Provides lists of wards and departments.)
         // Add domain endpoints for ward-service here.
-
+        setupMessageQueue();
     }
 
     private static List<Map<String, Object>> fetchIngestionRecords() throws Exception {
