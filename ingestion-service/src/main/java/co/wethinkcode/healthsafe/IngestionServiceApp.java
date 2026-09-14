@@ -20,10 +20,14 @@ public class IngestionServiceApp {
     public static void main(String[] args) throws IOException {
         List<ObjectNode> cleanedRecords = loadAndCleanWards(CSV_RESOURCE);
 
-        Javalin app = Javalin.create(config -> {
+        createApp(cleanedRecords).start(7030);
+    }
+
+    static Javalin createApp(List<ObjectNode> cleanedRecords) {
+        return Javalin.create(config -> {
             config.routes.get("/health", ctx -> ctx.result("OK"));
             config.routes.get("/records", ctx -> ctx.json(cleanedRecords));
-        }).start(7030);
+        });
     }
 
     protected static List<ObjectNode> loadAndCleanWards(String s) throws IOException {
