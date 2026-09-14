@@ -19,6 +19,7 @@ public class IngestionServiceApp {
 
     private static final String CSV_RESOURCE = "wards-outdated.csv";
     private static final int MAX_BEDS = 100;
+    private static final Map<String, String> DEPT_SYNONYMS = Map.of("Pediatrics", "Paediatrics");
 
     public static void main(String[] args) throws IOException {
         List<ObjectNode> cleanedRecords = loadAndCleanWards(CSV_RESOURCE);
@@ -62,6 +63,8 @@ public class IngestionServiceApp {
                     for (int i = 0; i < data.length; i++) {
                         data[i] = WordUtils.capitalizeFully(data[i].trim());
                     }
+
+                    data[2] = DEPT_SYNONYMS.getOrDefault(data[2], data[2]);
 
                     Integer beds = null;
                     String notes;
