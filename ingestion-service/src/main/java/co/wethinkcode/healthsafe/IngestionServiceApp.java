@@ -18,7 +18,7 @@ public class IngestionServiceApp {
     private static final String CSV_RESOURCE = "wards-outdated.csv";
 
     public static void main(String[] args) throws IOException {
-        List<ObjectNode> cleanedRecords = loadAndCleanWards();
+        List<ObjectNode> cleanedRecords = loadAndCleanWards(CSV_RESOURCE);
 
         Javalin app = Javalin.create(config -> {
             config.routes.get("/health", ctx -> ctx.result("OK"));
@@ -26,16 +26,16 @@ public class IngestionServiceApp {
         }).start(7030);
     }
 
-    private static List<ObjectNode> loadAndCleanWards() throws IOException {
+    protected static List<ObjectNode> loadAndCleanWards(String s) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         List<ObjectNode> results = new ArrayList<>();
         String csvSplitBy = ",";
 
         // Loaded from the classpath (src/main/resources) so it works
         // regardless of the working directory the JVM was launched from.
-        try (InputStream is = IngestionServiceApp.class.getClassLoader().getResourceAsStream(CSV_RESOURCE)) {
+        try (InputStream is = IngestionServiceApp.class.getClassLoader().getResourceAsStream(s)) {
             if (is == null) {
-                throw new IOException("Could not find " + CSV_RESOURCE + " on the classpath");
+                throw new IOException("Could not find " + s + " on the classpath");
             }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
