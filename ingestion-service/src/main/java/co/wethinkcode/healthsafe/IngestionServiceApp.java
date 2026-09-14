@@ -7,7 +7,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -32,7 +34,7 @@ public class IngestionServiceApp {
 
     protected static List<ObjectNode> loadAndCleanWards(String s) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        List<ObjectNode> results = new ArrayList<>();
+        Map<String, ObjectNode> resultsByWardsId = new LinkedHashMap<>();
         String csvSplitBy = ",";
 
         // Loaded from the classpath (src/main/resources) so it works
@@ -80,11 +82,37 @@ public class IngestionServiceApp {
                     jsonObject.put("beds_available", beds);
                     jsonObject.put("notes", notes);
 
-                    results.add(jsonObject);
+                    String wardId = data[0];
+                    ObjectNode existing = resultsByWardsId.get(wardId);
+                    if (existing == null) {
+                        resultsByWardsId.put(wardId, jsonObject);
+                    } else {
+                        mergeDuplicate(existing, jsonObject);
+                    }
                 }
             }
         }
 
-        return results;
+        return new ArrayList<>(resultsByWardsId.values());
     }
+
+    private static void mergeDuplicate(ObjectNode existing, ObjectNode duplicate) {
+        boolean existingHasBeds = existing.hasNonNull("beds_available");
+        boolean duplicateHasBeds = duplicate.hasNonNull("beds_available");
+
+        if (!existingHasBeds && duplicateHasBeds) {
+            existing.set("beds_available", duplicate.get("beds_available"));
+            existing.put("notes", "N/A");
+        } else if (existingHasBeds && duplicateHasBeds
+                && existing.get("beds_available").asInt() != duplicate.get("beds_available").asInt()) {
+            existing.put("notes", "duplicate ward_id with conflicting beds_available values - flagged for follow up");
+        }
+
+        String mergedFlag = " (duplicate ward_id merged)";
+        String currentNotes = existing.get("notes").asText();
+        if (!currentNotes.endsWith(mergedFlag)) {
+            existing.put("notes", currentNotes + mergedFlag);
+        }
+    }
+
 }
