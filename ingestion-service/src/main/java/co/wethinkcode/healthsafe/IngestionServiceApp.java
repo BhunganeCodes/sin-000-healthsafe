@@ -18,6 +18,7 @@ import org.apache.commons.text.WordUtils;
 public class IngestionServiceApp {
 
     private static final String CSV_RESOURCE = "wards-outdated.csv";
+    private static final int MAX_BEDS = 100;
 
     public static void main(String[] args) throws IOException {
         List<ObjectNode> cleanedRecords = loadAndCleanWards(CSV_RESOURCE);
@@ -69,6 +70,9 @@ public class IngestionServiceApp {
                         notes = "N/A";
                         if (beds < 0) {
                             notes = "beds_available was negative ('" + beds + "') - flagged for follow up";
+                            beds = null;
+                        } else if (beds > MAX_BEDS) {
+                            notes = "beds_available was unrealistically large ('" + beds + "') - flagged for follow up";
                             beds = null;
                         }
                     } catch (NumberFormatException e) {
