@@ -11,14 +11,15 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for IngestionServiceApp.loadAndCleanWards(String), covering the
  * cleaning behaviour the current implementation actually performs:
- * casing normalisation, padding trim, and numeric validation on
- * beds_available. Each test uses its own small fixture CSV under
- * src/test/resources so it's isolated from changes to the real
- * wards-outdated.csv.
+ * casing normalisation, padding trim, numeric validation (negative /
+ * non-numeric / unrealistically large) on beds_available, department
+ * spelling-variant normalisation, and duplicate ward_id merging.
+ * Each test uses its own small fixture CSV under src/test/resources so
+ * it's isolated from changes to the real wards-outdated.csv.
  *
- * NOTE: duplicate detection, date-format normalisation, and boolean/flag
- * normalisation are called for in the user stories but are not implemented
- * in IngestionServiceApp yet (those columns aren't even read from the CSV),
+ * NOTE: date-format normalisation and boolean/flag normalisation are
+ * called for in the user stories but are not implemented in
+ * IngestionServiceApp yet (no such columns are read from the CSV at all),
  * so there are no tests for them here. Add fixtures + tests for those once
  * the corresponding parsing logic exists.
  */
@@ -94,5 +95,49 @@ class IngestionServiceParsingTest {
 
         assertEquals(1, records.size(), "blank lines should be skipped, not counted as records");
         assertEquals("W-06", records.get(0).get("ward_id").asText());
+    }
+
+    @Test
+    void mergesDuplicateWardIdsKeepingTheValidBedCount() throws IOException {
+        List<ObjectNode> records = IngestionServiceApp.loadAndCleanWards("wards-duplicate.csv");
+
+        assertEquals(1, records.size(), "two rows for the same ward should merge into one record");
+        ObjectNode record = records.get(0);
+        assertEquals("W-05", record.get("ward_id").asText());
+        assertEquals(5, record.get("beds_available").asInt(), "the valid bed count from either row should win");
+        assertEquals("N/A (duplicate ward_id merged)", record.get("notes").asText());
+    }
+
+    @Test
+    void flagsConflictingDuplicateBedCountsInsteadOfPickingOneSilently() throws IOException {
+        List<ObjectNode> records = IngestionServiceApp.loadAndCleanWards("wards-duplicate-conflict.csv");
+
+        assertEquals(1, records.size());
+        ObjectNode record = records.get(0);
+        assertEquals(4, record.get("beds_available").asInt(), "first-seen valid value is kept when both rows disagree");
+        assertEquals(
+                "duplicate ward_id with conflicting beds_available values - flagged for follow up (duplicate ward_id merged)",
+                record.get("notes").asText()
+        );
+    }
+
+    @Test
+    void flagsUnrealisticallyLargeBedsAvailableAndNullsTheValue() throws IOException {
+        List<ObjectNode> records = IngestionServiceApp.loadAndCleanWards("wards-unrealistic-beds.csv");
+
+        ObjectNode record = records.get(0);
+        assertTrue(record.get("beds_available").isNull(), "an implausibly large bed count should be nulled out");
+        assertEquals(
+                "beds_available was unrealistically large ('2023') - flagged for follow up",
+                record.get("notes").asText()
+        );
+    }
+
+    @Test
+    void normalisesAmericanSpellingDepartmentVariants() throws IOException {
+        List<ObjectNode> records = IngestionServiceApp.loadAndCleanWards("wards-spelling-variant.csv");
+
+        assertEquals("Paediatrics", records.get(0).get("department").asText(),
+                "American 'Pediatrics' spelling should normalise to the canonical 'Paediatrics'");
     }
 }
