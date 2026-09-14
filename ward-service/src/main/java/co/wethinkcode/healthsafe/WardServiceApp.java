@@ -11,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -19,8 +20,6 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 
 import co.wethinkcode.healthsafe.mq.MqConfig;
 
-import io.javalin.Javalin;
-import org.apache.activemq.Message;
 
 public class WardServiceApp {
 
@@ -45,7 +44,27 @@ public class WardServiceApp {
                     ctx.json(wardsOnly);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    //ctx.status(502).json(Map.of("error", "Could not reach ingestion service"));
+                    ctx.status(502).json(Map.of("error", "Could not reach ingestion service"));
+                }
+            });
+
+            config.routes.get("/wards/{id}", ctx -> {
+                String id = ctx.pathParam("id");
+
+                try {
+                    List<Map<String, Object>> allRecords = fetchIngestionRecords();
+                    Optional<Map<String, Object>> match = allRecords.stream()
+                            .filter(record -> id.equalsIgnoreCase(String.valueOf(record.get("ward_id"))))
+                            .findFirst();
+                    if (match.isEmpty()) {
+                        ctx.status(404).json(Map.of("error", "No ward found with ID: " + id));
+                        return;
+                    }
+
+                    ctx.json(toWardView(match.get()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    ctx.status(502).json(Map.of("error", "Could not reach ingestion service"));
                 }
             });
 
