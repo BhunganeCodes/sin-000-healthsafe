@@ -14,8 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class StaffingServiceApp {
 
-    private static final String WARD_SERVICE = "http://localhost:7031/wards";
-    private static final String ALERT_SERVICE = "http:localhost:7032/alert-level";
+    private static final String WARD_SERVICE_URL = "http://localhost:7031/wards";
+    private static final String ALERT_LEVEL_URL = "http:localhost:7032/alert-level";
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final HttpClient client = HttpClient.newHttpClient();
 
@@ -36,8 +36,65 @@ public class StaffingServiceApp {
 
         app.get("/health", ctx -> ctx.result("OK"));
 
+
+
         // TODO (Provides on-call schedules for doctors based on ward and status.)
         // Add domain endpoints for staffing-service here.
+    }
+
+    private static Map<String, Object> fetchWard(String wardId) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(WARD_SERVICE_URL + wardId))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 404) {
+            throw new WardNotFoundException(wardId);
+        }
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("ward-service returned: " + response.statusCode());
+        }
+
+        return mapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+    }
+
+    private static int fetchAlertLevel() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(ALERT_LEVEL_URL))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("alert-level-service returned: " + response.statusCode());
+        }
+
+        Map<String, Object> body = mapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+        return ((Number) body.get("level")).intValue();
+    }
+
+    /**
+     * Sizes the on-call list from the department roster based on the current
+     * Emergency Status: higher status pulls in more doctors from the same
+     * department roster (capped at the roster's actual size).
+     */
+    private static List<String> buildOnCallList(String department, int alertLevel) {
+        List<String> roster = ON_CALL_ROSTER.getOrDefault(
+                department == null ? "" : department.toLowerCase(),
+                FALLBACK_ROSTER
+        );
+
+        int count = Math.min(roster.size(), 1 + (alertLevel / 2));
+        return roster.subList(0, count);
+    }
+
+    private static class WardNotFoundException extends RuntimeException {
+        WardNotFoundException(String wardId) {
+            super("No ward found with id '" + wardId + "'");
+        }
     }
 }
 
