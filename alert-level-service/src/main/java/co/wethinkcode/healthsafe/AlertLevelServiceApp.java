@@ -19,6 +19,31 @@ public class AlertLevelServiceApp {
 
         app.get("/alert-level", ctx -> ctx.json(Map.of("level", currentLevel.get())));
 
+        app.put("alert-level", ctx -> {
+            Map<?, ?> body;
+            try {
+                body = ctx.bodyAsClass(Map.class);
+            } catch (Exception e) {
+                ctx.status(400).json(Map.of("error", "Request body must be JSON with int 'level' field"));
+                return;
+            }
+
+            Object rawLevel = body.get("level");
+            if (!(rawLevel instanceof Number)) {
+                ctx.status(400).json(Map.of("error", "level must be a number between " + MIN_LEVEL + " and " + MAX_LEVEL));
+                return;
+            }
+
+            int newLevel = ((Number) rawLevel).intValue();
+            if (newLevel < MIN_LEVEL || newLevel > MAX_LEVEL) {
+                ctx.status(400).json(Map.of("error", "level must be between 0 and 8"));
+                return;
+            }
+
+            currentLevel.set(newLevel);
+            ctx.json(Map.of("level", currentLevel));
+        });
+
         // TODO (Tracks the hospital Emergency Status (0-8, 8 = full Code Blue).)
         // Add domain endpoints for alert-level-service here.
     }
